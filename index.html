@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Valores Urbanos</title>
+  
+  <!-- MapLibre desde Internet -->
+  <link href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
+  
+  <style>
+    :root {
+      --bg-panel: rgba(255, 255, 255, 0.85); 
+      --border-panel: rgba(0, 0, 0, 0.1);
+      --text-primary: #1c1c1e;
+      --text-secondary: rgba(60, 60, 67, 0.7);
+      --accent: #0071e3; 
+      --spacing: 24px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body, html {
+      width: 100%; height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background-color: #f1f5f9; color: var(--text-primary); overflow: hidden;
+    }
+
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; }
+
+    .panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(30px) saturate(180%);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+      border: 1px solid var(--border-panel);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      position: absolute; z-index: 10;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .info-panel { top: var(--spacing); left: var(--spacing); width: 320px; padding: var(--spacing); }
+
+    .panel-header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .panel-header p { font-size: 13px; font-weight: 400; color: var(--text-secondary); line-height: 1.4; margin-bottom: 16px; }
+
+    .report-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background-color: var(--text-primary); color: #fff;
+      text-decoration: none; padding: 8px 14px; border-radius: 8px;
+      font-size: 12px; font-weight: 600; margin-bottom: 24px;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .report-badge:hover { opacity: 0.8; transform: scale(0.98); }
+
+    .legend-bar {
+      width: 100%; height: 8px; border-radius: 4px;
+      background: linear-gradient(to right, #313695, #87dadb, #fdf9c8, #f05d15, #a50026);
+      margin-bottom: 10px;
+    }
+    .legend-labels {
+      display: flex; justify-content: space-between; font-size: 11px;
+      font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);
+    }
+
+    .tooltip {
+      padding: 16px; width: 270px; pointer-events: none;
+      transform: translate(-50%, -110%) scale(1); opacity: 1;
+    }
+    .tooltip.hidden { opacity: 0; transform: translate(-50%, -100%) scale(0.9); }
+    .tooltip-header { font-weight: 700; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-panel); }
+    .highlight-title { font-size: 22px; color: var(--accent); letter-spacing: -0.5px; }
+
+    .tt-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+    .tt-label { color: var(--text-secondary); }
+    .tt-value { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+    .tt-value.highlight { color: var(--text-secondary); font-weight: 500; }
+
+    .tooltip-divider { height: 1px; background-color: var(--border-panel); margin: 12px 0 10px 0; }
+    .tt-group-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      color: var(--text-secondary); margin-bottom: 10px; letter-spacing: 0.5px;
+    }
+    .maplibregl-ctrl-bottom-right { bottom: var(--spacing); right: var(--spacing); }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="panel info-panel">
+    <div class="panel-header">
+      <h1>Precios Modelados</h1>
+      <p>Clasificación estructurada en 20 Intervalos Iguales.</p>
+      
+      <!-- Botón de Descarga -->
+      <a href="./REPORTE.pdf" target="_blank" download="REPORTE_VALORES.pdf" class="report-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Descargar Reporte PDF
+      </a>
+    </div>
+
+    <div class="legend">
+      <div class="legend-bar"></div>
+      <div class="legend-labels">
+        <span>Menor Valor</span>
+        <span>Mayor Valor</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="tooltip" class="panel tooltip hidden">
+    <div class="tooltip-header highlight-title" id="tt-id">--</div>
+    
+    <div class="tooltip-body">
+      <div class="tt-item">
+        <span class="tt-label">Ancho Vía:</span>
+        <span class="tt-value" id="tt-via">--</span>
+      </div>
+      <div class="tt-item">
+        <span class="tt-label">Estrato:</span>
+        <span class="tt-value" id="tt-estrato">--</span>
+      </div>
+      <div class="tt-item">
+        <span class="tt-label">Zonificación:</span>
+        <span class="tt-value" id="tt-zonificacion">--</span>
+      </div>
+      
+      <div class="tooltip-divider"></div>
+      <div class="tt-group-title">Métricas de Proximidad</div>
+
+      <div class="tt-item">
+        <span class="tt-label">Metro (Norm):</span>
+        <span class="tt-value" id="tt-metro">--</span>
+      </div>
+      <div class="tt-item">
+        <span class="tt-label">Metropolitano:</span>
+        <span class="tt-value" id="tt-metropolitano">--</span>
+      </div>
+      <div class="tt-item">
+        <span class="tt-label">Área Verde:</span>
+        <span class="tt-value" id="tt-verde">--</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // JS incrustado
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+      center: [-76.995, -12.185], 
+      zoom: 14,
+      pitch: 0, 
+      antialias: true
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+
+    map.on('load', () => {
+
+      // Ruta directamente al mismo directorio del GitHub
+      map.addSource('valores', {
+        type: 'geojson',
+        data: 'valores_final.geojson',
+        promoteId: 'OBJECTID'
+      });
+
+      const minPrice = -33.78;
+      const maxPrice = 218.83;
+      const numClasses = 20;
+      const intervalOffset = (maxPrice - minPrice) / numClasses;
+
+      const breaks = [];
+      for (let i = 1; i < numClasses; i++) {
+        breaks.push(minPrice + (i * intervalOffset));
+      }
+      
+      const colors = [
+        '#313695', '#3953a4', '#4270b2', '#4b8ebf', '#58abcb',
+        '#6dc4d6', '#87dadb', '#a4eadd', '#c2f4df', '#dffbdf',
+        '#fdf9c8', '#fee395', '#fdc768', '#fca543', '#f88126',
+        '#f05d15', '#e33d11', '#d12115', '#b90d22', '#a50026'
+      ];
+      
+      const colorStep = ['step', ['get', 'precio_modelado'], colors[0]];
+      for (let i = 0; i < breaks.length; i++) {
+        colorStep.push(breaks[i], colors[i+1]);
+      }
+
+      map.addLayer({
+        id: 'valores-fill',
+        type: 'fill',
+        source: 'valores',
+        paint: {
+          'fill-color': colorStep,
+          'fill-opacity': 0.95
+        }
+      });
+
+      map.addLayer({
+        id: 'valores-borders',
+        type: 'line',
+        source: 'valores',
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 0.8,
+          'line-opacity': 0.6
+        }
+      });
+
+      map.addLayer({
+        id: 'valores-hover',
+        type: 'line',
+        source: 'valores',
+        paint: {
+          'line-color': '#1c1c1e', 
+          'line-width': 3,
+          'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.9, 0]
+        }
+      });
+
+      let hoveredStateId = null;
+      const tooltip = document.getElementById('tooltip');
+      
+      const ttId = document.getElementById('tt-id'); 
+      const ttVia = document.getElementById('tt-via');
+      const ttEstrato = document.getElementById('tt-estrato');
+      const ttZonificacion = document.getElementById('tt-zonificacion');
+      const ttMetro = document.getElementById('tt-metro');
+      const ttMetropolitano = document.getElementById('tt-metropolitano');
+      const ttVerde = document.getElementById('tt-verde');
+
+      const formatter = new Intl.NumberFormat('es-PE', {
+        style: 'currency',
+        currency: 'PEN',
+        minimumFractionDigits: 2
+      });
+
+      function val(value, decimals = 3) {
+        if (value === undefined || value === null) return '--';
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? '--' : parsed.toFixed(decimals);
+      }
+
+      map.on('mousemove', 'valores-fill', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+
+        if (e.features.length > 0) {
+          if (hoveredStateId !== null) {
+            map.setFeatureState({ source: 'valores', id: hoveredStateId }, { hover: false });
+          }
+          
+          const feature = e.features[0];
+          hoveredStateId = feature.id; 
+
+          if (hoveredStateId !== undefined && hoveredStateId !== null) {
+            map.setFeatureState({ source: 'valores', id: hoveredStateId }, { hover: true });
+          }
+
+          const p = feature.properties;
+          const price = parseFloat(p.precio_modelado);
+          
+          ttId.textContent = !isNaN(price) ? formatter.format(price) : 'Sin Precio';
+          
+          ttVia.textContent = val(p.ancho_via, 3);
+          ttEstrato.textContent = val(p.estrato, 2);
+          ttZonificacion.textContent = val(p.zonificacion, 2);
+          
+          ttMetro.textContent = val(p.norm_dist_metro, 3);
+          ttMetropolitano.textContent = val(p.norm_dist_metropolitano, 3);
+          ttVerde.textContent = val(p.norm_dist_area_verde, 3);
+
+          tooltip.style.left = `${e.point.x}px`;
+          tooltip.style.top = `${e.point.y}px`;
+          tooltip.classList.remove('hidden');
+        }
+      });
+
+      map.on('mouseleave', 'valores-fill', () => {
+        map.getCanvas().style.cursor = '';
+        if (hoveredStateId !== null) {
+          map.setFeatureState({ source: 'valores', id: hoveredStateId }, { hover: false });
+        }
+        hoveredStateId = null;
+        tooltip.classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+</html>

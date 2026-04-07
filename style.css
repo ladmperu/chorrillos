@@ -1,0 +1,173 @@
+:root {
+  --bg-panel: rgba(255, 255, 255, 0.85); 
+  --border-panel: rgba(0, 0, 0, 0.1);
+  --text-primary: #1c1c1e;
+  --text-secondary: rgba(60, 60, 67, 0.7);
+  --accent: #0071e3; 
+  --spacing: 24px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: #f1f5f9;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.panel {
+  background: var(--bg-panel);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--border-panel);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  position: absolute;
+  z-index: 10;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.info-panel {
+  top: var(--spacing);
+  left: var(--spacing);
+  width: 320px;
+  padding: var(--spacing);
+}
+
+.panel-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+
+.panel-header p {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+/* Stylish Download Button */
+.report-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--text-primary);
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.report-badge:hover {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+.legend-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #313695, #87dadb, #fdf9c8, #f05d15, #a50026);
+  margin-bottom: 10px;
+}
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.tooltip {
+  padding: 16px;
+  width: 270px;
+  pointer-events: none;
+  transform: translate(-50%, -110%) scale(1);
+  opacity: 1;
+}
+
+.tooltip.hidden {
+  opacity: 0;
+  transform: translate(-50%, -100%) scale(0.9);
+}
+
+.tooltip-header {
+  font-weight: 700;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-panel);
+}
+
+.highlight-title {
+  font-size: 22px;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+}
+
+.tt-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.tt-label {
+  color: var(--text-secondary);
+}
+
+.tt-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.tt-value.highlight {
+  color: var(--text-secondary); 
+  font-weight: 500;
+}
+
+.tooltip-divider {
+  height: 1px;
+  background-color: var(--border-panel);
+  margin: 12px 0 10px 0;
+}
+
+.tt-group-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+.maplibregl-ctrl-bottom-right {
+  bottom: var(--spacing);
+  right: var(--spacing);
+}
